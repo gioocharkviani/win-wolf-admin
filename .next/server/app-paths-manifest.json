@@ -1,0 +1,16 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/forgot-password/page": "app/forgot-password/page.js",
+  "/login/page": "app/login/page.js",
+  "/page": "app/page.js",
+  "/reset-password/page": "app/reset-password/page.js",
+  "/(dashboard)/admins/page": "app/(dashboard)/admins/page.js",
+  "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js",
+  "/(dashboard)/categories/page": "app/(dashboard)/categories/page.js",
+  "/(dashboard)/games/page": "app/(dashboard)/games/page.js",
+  "/(dashboard)/promotions/page": "app/(dashboard)/promotions/page.js",
+  "/(dashboard)/users/[userId]/page": "app/(dashboard)/users/[userId]/page.js",
+  "/(dashboard)/wagering/page": "app/(dashboard)/wagering/page.js",
+  "/(dashboard)/users/page": "app/(dashboard)/users/page.js",
+  "/(dashboard)/transactions/page": "app/(dashboard)/transactions/page.js"
+}

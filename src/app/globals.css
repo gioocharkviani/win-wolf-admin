@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body { @apply bg-gray-950 text-gray-100 antialiased; }
+  * { @apply box-border; }
+}
+
+@layer components {
+  .btn           { @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed; }
+  .btn-primary   { @apply btn bg-primary-600 hover:bg-primary-700 text-white; }
+  .btn-danger    { @apply btn bg-red-600 hover:bg-red-700 text-white; }
+  .btn-success   { @apply btn bg-emerald-600 hover:bg-emerald-700 text-white; }
+  .btn-ghost     { @apply btn bg-transparent hover:bg-gray-800 text-gray-300; }
+  .btn-outline   { @apply btn border border-gray-700 hover:bg-gray-800 text-gray-300; }
+  .card          { @apply bg-gray-900 border border-gray-800 rounded-xl p-6; }
+  .input         { @apply w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent; }
+  .label         { @apply block text-xs font-medium text-gray-400 mb-1; }
+  .section-block { @apply bg-gray-800/50 rounded-lg p-3; }
+  .badge         { @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium; }
+  .th            { @apply text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3; }
+  .td            { @apply px-4 py-3 text-sm text-gray-300; }
+  .tr-hover      { @apply border-b border-gray-800/60 hover:bg-gray-800/30 transition-colors; }
+  .section-title { @apply text-2xl font-bold text-white; }
+  .section-sub   { @apply text-sm text-gray-400 mt-0.5; }
+}
