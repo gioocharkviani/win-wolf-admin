@@ -359,6 +359,7 @@ export interface Transaction {
   roundId?: string;
   reason?: string;
   transactionId?: string;
+  gameSessionId?: number;
   createdAt: string;
   game?: { gameName: string };
 }
