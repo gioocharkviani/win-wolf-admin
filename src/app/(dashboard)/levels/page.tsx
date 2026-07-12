@@ -199,7 +199,7 @@ export default function LevelsPage() {
       </div>
 
       {/* Modal */}
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editing ? 'Edit Level' : 'New Level'}>
+      {showModal && <Modal onClose={() => setShowModal(false)} title={editing ? 'Edit Level' : 'New Level'}>
         <div className="space-y-4">
           {error && <p className="text-red-400 text-sm">{error}</p>}
 
@@ -280,7 +280,7 @@ export default function LevelsPage() {
             </button>
           </div>
         </div>
-      </Modal>
+      </Modal>}
     </div>
   );
 }
