@@ -548,4 +548,27 @@ export interface TxPage {
   totalPages?: number;
 }
 
+export interface Level {
+  id: number;
+  name: string;
+  minPoints: number;
+  maxPoints: number;
+  order: number;
+  description?: string;
+  badgeUrl?: string;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export const levelsApi = {
+  list: () => get<{ code: number; data: Level[] }>(`${BASE}/admin/levels`),
+  create: (body: Omit<Level, 'id' | 'isActive' | 'createdAt' | 'updatedAt'>) =>
+    post<{ code: number; data: Level }>(`${BASE}/admin/levels`, body),
+  update: (id: number, body: Partial<Level>) =>
+    put<{ code: number; data: Level }>(`${BASE}/admin/levels/${id}`, body),
+  remove: (id: number) =>
+    del<{ code: number }>(`${BASE}/admin/levels/${id}`),
+};
+
 
