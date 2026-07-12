@@ -20,11 +20,16 @@ async function http<T = unknown>(
   path: string,
   body?: unknown,
 ): Promise<T> {
-  const res = await fetch(path, {
-    method,
-    headers: headers(),
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
+  let res: Response;
+  try {
+    res = await fetch(path, {
+      method,
+      headers: headers(),
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    return { statusCode: 503, message: 'Service unavailable. Please try again.' } as unknown as T;
+  }
 
   if (res.status === 401) {
     localStorage.removeItem("admin_token");
