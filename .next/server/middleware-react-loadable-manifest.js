@@ -1,1 +1,0 @@
-self.__REACT_LOADABLE_MANIFEST="{\"app\\\\(dashboard)\\\\users\\\\[userId]\\\\page.tsx -> @/lib/api\":{\"id\":\"app\\\\(dashboard)\\\\users\\\\[userId]\\\\page.tsx -> @/lib/api\",\"files\":[]}}"
