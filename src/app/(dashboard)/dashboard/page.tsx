@@ -146,7 +146,7 @@ export default function DashboardPage() {
                 <Badge {...txTypeBadge(tx.type)} />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-mono font-medium text-white">
-                    {tx.amount !== undefined ? (tx.amount / 100).toFixed(2) : '—'}
+                    {tx.amount !== undefined ? '₺' + (tx.amount / 100).toFixed(2) : '—'}
                   </div>
                   <div className="text-xs text-gray-500 font-mono truncate">{tx.userId?.slice(0, 16)}…</div>
                 </div>

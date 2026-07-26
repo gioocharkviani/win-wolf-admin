@@ -561,6 +561,138 @@ export interface Level {
   updatedAt?: string;
 }
 
+// ─── analytics ───────────────────────────────────────────────────────────────
+
+export interface DailyFinancialPoint {
+  date: string;
+  deposits: number;
+  withdrawals: number;
+  wagered: number;
+  ggr: number;
+  activeUsers: number;
+}
+
+export interface DailySessionPoint {
+  date: string;
+  sessions: number;
+  uniquePlayers: number;
+}
+
+export interface DailyActiveUsers {
+  date: string;
+  count: number;
+}
+
+export interface DailyRegistration {
+  date: string;
+  count: number;
+}
+
+export interface TxTypeBreakdown {
+  type: string;
+  count: number;
+  totalAmount: number;
+}
+
+export interface TopGame {
+  gameId: string;
+  gameName: string;
+  thumbnail: string | null;
+  wagered: number;
+  won: number;
+  ggr: number;
+  uniquePlayers: number;
+}
+
+export interface PlatformAnalyticsData {
+  financial: {
+    deposits:           { total: number; count: number; average: number };
+    withdrawals:        { total: number; count: number };
+    pendingWithdrawals: { total: number; count: number };
+    bonusPayouts:       { total: number; count: number };
+    ggr:                number;
+    netRevenue:         number;
+  };
+  games: {
+    totalSessions:  number;
+    activeSessions: number;
+    topGames:       TopGame[];
+  };
+  timeSeries: {
+    dailyFinancial:   DailyFinancialPoint[];
+    dailySessions:    DailySessionPoint[];
+    dailyActiveUsers: DailyActiveUsers[];
+  };
+  typeBreakdown: TxTypeBreakdown[];
+  userRegistrations: {
+    newThisWeek:          number;
+    newThisMonth:         number;
+    dailyRegistrations:   DailyRegistration[];
+  } | null;
+}
+
+// ─── user analytics ──────────────────────────────────────────────────────────
+
+export interface UserTopGame {
+  gameId:    string;
+  gameName:  string;
+  thumbnail: string | null;
+  wagered:   number;
+  won:       number;
+  ggr:       number;
+  txCount:   number;
+}
+
+export interface DailyUserActivity {
+  date:      string;
+  wagered:   number;
+  won:       number;
+  deposited: number;
+}
+
+export interface UserAnalyticsData {
+  summary: {
+    totalDeposits:     number;
+    totalWithdrawals:  number;
+    netDeposit:        number;
+    totalWagered:      number;
+    totalWon:          number;
+    ggr:               number;
+    netProfit:         number;
+    rtp:               number;
+    bonusBetsCount:    number;
+    bonusWinnings:     number;
+    depositCount:      number;
+    activePromotions:  number;
+    firstDepositAt:    string | null;
+    lastActivityAt:    string | null;
+  };
+  activity: {
+    todayWagered:    number;
+    weeklyWagered:   number;
+    monthlyWagered:  number;
+    lastActivityDate: string | null;
+  };
+  games: {
+    totalSessions:  number;
+    activeSessions: number;
+    totalGameTime:  number;
+    topGames:       UserTopGame[];
+  };
+  timeSeries: {
+    dailyActivity:     DailyUserActivity[];
+    depositHistory:    { id: string; amount: number; status: string | undefined; createdAt: string }[];
+    withdrawalHistory: { id: string; amount: number; status: string | undefined; createdAt: string }[];
+  };
+}
+
+export const analyticsApi = {
+  get: () =>
+    get<{ statusCode: number; data: PlatformAnalyticsData }>(`${BASE}/admin/analytics`),
+  getUser: (userId: string) =>
+    get<{ code: number; data: UserAnalyticsData }>(`${BASE}/admin/analytics/users/${userId}`),
+};
+
 export const levelsApi = {
   list: () => get<{ code: number; data: Level[] }>(`${BASE}/admin/levels`),
   create: (body: Omit<Level, 'id' | 'isActive' | 'createdAt' | 'updatedAt'>) =>

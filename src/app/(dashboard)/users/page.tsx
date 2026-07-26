@@ -125,7 +125,7 @@ export default function UsersPage() {
                         <td className="td text-sm text-gray-400">@{u.userName}</td>
                         <td className="td text-sm text-gray-400">{u.phone ?? '—'}</td>
                         <td className="td font-mono text-sm text-emerald-400">
-                          {u.wallet ? `${(u.wallet.balance / 100).toFixed(2)}` : '—'}
+                          {u.wallet ? `₺${(u.wallet.balance / 100).toFixed(2)}` : '—'}
                         </td>
                         <td className="td"><Badge {...b} /></td>
                         <td className="td text-xs text-gray-500 whitespace-nowrap">

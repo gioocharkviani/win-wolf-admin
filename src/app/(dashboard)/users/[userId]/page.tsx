@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usersApi, wageringApi, type User, type Transaction, type UserBonus, type WageringEntry } from '@/lib/api';
+import { usersApi, wageringApi, analyticsApi, type User, type Transaction, type UserBonus, type WageringEntry, type UserAnalyticsData } from '@/lib/api';
 import Badge, { statusBadge, txTypeBadge, txStatusBadge } from '@/components/ui/Badge';
 import { PageSpinner } from '@/components/ui/Spinner';
 
@@ -14,11 +14,16 @@ interface EditProfileForm {
 export default function UserDetailPage({ params }: { params: { userId: string } }) {
   const { userId } = params;
 
-  const [user, setUser]             = useState<User | null>(null);
-  const [txs, setTxs]               = useState<Transaction[]>([]);
-  const [bonuses, setBonuses]       = useState<UserBonus[]>([]);
-  const [wagering, setWagering]     = useState<WageringEntry[]>([]);
-  const [loading, setLoading]       = useState(true);
+  const [user, setUser]               = useState<User | null>(null);
+  const [txs, setTxs]                 = useState<Transaction[]>([]);
+  const [bonuses, setBonuses]         = useState<UserBonus[]>([]);
+  const [wagering, setWagering]       = useState<WageringEntry[]>([]);
+  const [userAnalytics, setAnalytics] = useState<UserAnalyticsData | null>(null);
+  const [loading, setLoading]         = useState(true);
+
+  // transaction pagination
+  const [txVisible, setTxVisible]   = useState(10);
+  const [txCustom, setTxCustom]     = useState('');
 
   // balance adjustment
   const [adjAmount, setAdjAmount] = useState('');
@@ -45,17 +50,19 @@ export default function UserDetailPage({ params }: { params: { userId: string } 
 
   const load = async () => {
     setLoading(true);
-    const [uRes, tRes, bRes, wRes] = await Promise.all([
+    const [uRes, tRes, bRes, wRes, aRes] = await Promise.all([
       usersApi.getById(userId),
       usersApi.transactions(userId),
       usersApi.bonuses(userId),
       wageringApi.getForUser(userId),
+      analyticsApi.getUser(userId),
     ]);
     const u = uRes?.data ?? null;
     setUser(u);
     setTxs(tRes?.data ?? []);
     setBonuses(bRes?.data ?? []);
     setWagering(wRes?.data ?? []);
+    setAnalytics(aRes?.data ?? null);
     setPidValue(u?.personalId ?? '');
     if (u) {
       setEditForm({
@@ -326,10 +333,186 @@ export default function UserDetailPage({ params }: { params: { userId: string } 
         </div>
       </div>
 
+      {/* ── USER ANALYTICS ── */}
+      {userAnalytics && (
+        <div className="space-y-4">
+          <h2 className="text-base font-semibold text-white">Player Analytics</h2>
+
+          {/* Financial summary */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {([
+              { label: 'Total Deposited',  value: `₺${(userAnalytics.summary.totalDeposits / 100).toFixed(2)}`,    color: 'border-green-800 bg-green-900/20 text-green-400' },
+              { label: 'Total Withdrawn',  value: `₺${(userAnalytics.summary.totalWithdrawals / 100).toFixed(2)}`, color: 'border-red-800 bg-red-900/20 text-red-400' },
+              { label: 'Net Deposit',      value: `₺${(userAnalytics.summary.netDeposit / 100).toFixed(2)}`,       color: 'border-blue-800 bg-blue-900/20 text-blue-400' },
+              { label: 'Total Wagered',    value: `₺${(userAnalytics.summary.totalWagered / 100).toFixed(2)}`,     color: 'border-purple-800 bg-purple-900/20 text-purple-400' },
+              { label: 'Total Won',        value: `₺${(userAnalytics.summary.totalWon / 100).toFixed(2)}`,         color: 'border-cyan-800 bg-cyan-900/20 text-cyan-400' },
+              { label: 'GGR (Casino)',     value: `₺${(userAnalytics.summary.ggr / 100).toFixed(2)}`,              color: userAnalytics.summary.ggr >= 0 ? 'border-green-800 bg-green-900/20 text-green-400' : 'border-red-800 bg-red-900/20 text-red-400' },
+              { label: 'RTP',              value: `${userAnalytics.summary.rtp.toFixed(1)}%`,                      color: 'border-yellow-800 bg-yellow-900/20 text-yellow-400' },
+              { label: 'Game Sessions',    value: String(userAnalytics.games.totalSessions),                       color: 'border-orange-800 bg-orange-900/20 text-orange-400' },
+            ] as { label: string; value: string; color: string }[]).map(({ label, value, color }) => (
+              <div key={label} className={`rounded-xl border p-4 ${color}`}>
+                <p className="text-xs uppercase tracking-wider opacity-60 font-medium">{label}</p>
+                <p className="text-xl font-bold text-white mt-1 tabular-nums">{value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Activity period stats */}
+          <div className="grid grid-cols-3 gap-3">
+            {([
+              { label: 'Wagered Today',   value: `₺${(userAnalytics.activity.todayWagered   / 100).toFixed(2)}` },
+              { label: 'Wagered This Week',  value: `₺${(userAnalytics.activity.weeklyWagered  / 100).toFixed(2)}` },
+              { label: 'Wagered This Month', value: `₺${(userAnalytics.activity.monthlyWagered / 100).toFixed(2)}` },
+            ]).map(({ label, value }) => (
+              <div key={label} className="card p-4">
+                <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">{label}</p>
+                <p className="text-lg font-bold text-white mt-1 tabular-nums">{value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Bonus stats */}
+          {(userAnalytics.summary.bonusBetsCount > 0 || userAnalytics.summary.activePromotions > 0) && (
+            <div className="grid grid-cols-3 gap-3">
+              <div className="card p-4">
+                <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">Bonus Bets</p>
+                <p className="text-lg font-bold text-white mt-1">{userAnalytics.summary.bonusBetsCount.toLocaleString()}</p>
+              </div>
+              <div className="card p-4">
+                <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">Bonus Winnings</p>
+                <p className="text-lg font-bold text-white mt-1">${(userAnalytics.summary.bonusWinnings / 100).toFixed(2)}</p>
+              </div>
+              <div className="card p-4">
+                <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">Active Promotions</p>
+                <p className="text-lg font-bold text-white mt-1">{userAnalytics.summary.activePromotions}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Top games */}
+          {userAnalytics.games.topGames.length > 0 && (
+            <div className="card p-5">
+              <h3 className="text-sm font-semibold text-white mb-3">Top Games Played</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-800 text-gray-400 text-xs uppercase">
+                      <th className="text-left py-2 pr-4">#</th>
+                      <th className="text-left py-2 pr-4">Game</th>
+                      <th className="text-right py-2 pr-4">Wagered</th>
+                      <th className="text-right py-2 pr-4">Won</th>
+                      <th className="text-right py-2 pr-4">GGR</th>
+                      <th className="text-right py-2">Tx Count</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800/60">
+                    {userAnalytics.games.topGames.map((g, i) => (
+                      <tr key={g.gameId} className="hover:bg-gray-800/30">
+                        <td className="py-2 pr-4 text-gray-500">{i + 1}</td>
+                        <td className="py-2 pr-4">
+                          <div className="flex items-center gap-2">
+                            {g.thumbnail && <img src={g.thumbnail} alt="" className="w-6 h-6 rounded object-cover opacity-80" />}
+                            <span className="text-gray-200 truncate max-w-[160px]">{g.gameName}</span>
+                          </div>
+                        </td>
+                        <td className="py-2 pr-4 text-right text-gray-300 tabular-nums">₺{(g.wagered / 100).toFixed(2)}</td>
+                        <td className="py-2 pr-4 text-right text-gray-300 tabular-nums">₺{(g.won / 100).toFixed(2)}</td>
+                        <td className={`py-2 pr-4 text-right font-medium tabular-nums ${g.ggr >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          ₺{(g.ggr / 100).toFixed(2)}
+                        </td>
+                        <td className="py-2 text-right text-gray-400 tabular-nums">{g.txCount}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Daily activity mini chart */}
+          {userAnalytics.timeSeries.dailyActivity.length > 0 && (
+            <div className="card p-5">
+              <h3 className="text-sm font-semibold text-white mb-3">Daily Activity (last 30 days)</h3>
+              {(() => {
+                const labels = Array.from({ length: 30 }, (_, i) => {
+                  const d = new Date(); d.setDate(d.getDate() - (29 - i));
+                  return d.toISOString().slice(0, 10);
+                });
+                const actMap: Record<string, { wagered: number; won: number; deposited: number }> = {};
+                userAnalytics.timeSeries.dailyActivity.forEach((d) => {
+                  actMap[String(d.date).slice(0, 10)] = { wagered: d.wagered, won: d.won, deposited: d.deposited };
+                });
+                const wagSeries = labels.map((l) => actMap[l]?.wagered ?? 0);
+                const wonSeries = labels.map((l) => actMap[l]?.won ?? 0);
+                const depSeries = labels.map((l) => actMap[l]?.deposited ?? 0);
+                const max = Math.max(...wagSeries, ...wonSeries, ...depSeries, 1);
+                const H = 120;
+                return (
+                  <div className="overflow-x-auto">
+                    <div style={{ minWidth: 480 }}>
+                      <div className="flex items-end gap-px" style={{ height: H }}>
+                        {labels.map((lbl, i) => (
+                          <div key={lbl} className="flex-1 flex flex-col items-stretch justify-end gap-px group">
+                            {[
+                              { v: wagSeries[i], color: '#3b82f6' },
+                              { v: wonSeries[i], color: '#8b5cf6' },
+                              { v: depSeries[i], color: '#22c55e' },
+                            ].map(({ v, color }, ci) => (
+                              <div key={ci}
+                                title={`${lbl}: ₺${(v / 100).toFixed(2)}`}
+                                className="w-full rounded-t-sm"
+                                style={{ height: Math.max(v > 0 ? (v / max) * (H - 16) : 0, 0), backgroundColor: color }}
+                              />
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex gap-px mt-1">
+                        {labels.map((l, i) => (
+                          <div key={l} className="flex-1 text-center text-gray-600" style={{ fontSize: 9 }}>
+                            {i % 5 === 0 ? l.slice(5) : ''}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex gap-4 mt-2">
+                        {[['Wagered', '#3b82f6'], ['Won', '#8b5cf6'], ['Deposited', '#22c55e']].map(([l, col]) => (
+                          <div key={l} className="flex items-center gap-1.5 text-xs text-gray-400">
+                            <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: col }} />
+                            {l}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Transactions */}
       <div className="card p-0 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-800">
-          <h2 className="text-base font-semibold text-white">Transactions ({txs.length})</h2>
+        <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between gap-4">
+          <h2 className="text-base font-semibold text-white">
+            Transactions ({txs.length}) — showing {Math.min(txVisible, txs.length)}
+          </h2>
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-gray-500 text-xs">Show:</span>
+            <input
+              type="number"
+              min={1}
+              value={txCustom}
+              onChange={e => setTxCustom(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && txCustom) setTxVisible(Number(txCustom)); }}
+              placeholder={String(txVisible)}
+              className="w-16 bg-gray-800 border border-gray-700 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-gray-500"
+            />
+            <button
+              onClick={() => { if (txCustom) setTxVisible(Number(txCustom)); }}
+              className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 text-xs text-gray-200 transition-colors"
+            >Go</button>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -343,7 +526,7 @@ export default function UserDetailPage({ params }: { params: { userId: string } 
             <tbody>
               {txs.length === 0 ? (
                 <tr><td colSpan={9} className="text-center text-gray-500 py-12">No transactions</td></tr>
-              ) : txs.map(tx => (
+              ) : txs.slice(0, txVisible).map(tx => (
                 <tr key={tx.id} className="tr-hover">
                   <td className="td"><Badge {...txTypeBadge(tx.type)} /></td>
                   <td className="td font-mono font-medium">{tx.amount !== undefined ? (tx.amount / 100).toFixed(2) : '—'}</td>
@@ -359,6 +542,22 @@ export default function UserDetailPage({ params }: { params: { userId: string } 
             </tbody>
           </table>
         </div>
+        {txs.length > txVisible && (
+          <div className="px-6 py-3 border-t border-gray-800 flex items-center gap-3">
+            <button
+              onClick={() => setTxVisible(v => v + 10)}
+              className="text-sm text-blue-400 hover:text-blue-300 transition-colors font-medium"
+            >
+              + Show 10 more ({txs.length - txVisible} remaining)
+            </button>
+            <button
+              onClick={() => setTxVisible(txs.length)}
+              className="text-sm text-gray-500 hover:text-gray-400 transition-colors"
+            >
+              Show all
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Edit Profile Modal */}

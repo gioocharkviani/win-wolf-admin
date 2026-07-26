@@ -16,7 +16,7 @@ const STATUS_TABS = [
 ] as const;
 
 function fmt(n: number) {
-  return (Number(n) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return '₺' + (Number(n) / 100).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function WageringBar({ completed, required }: { completed: number; required: number }) {

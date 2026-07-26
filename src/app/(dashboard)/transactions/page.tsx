@@ -13,7 +13,7 @@ const LIMIT = 50;
 
 function fmt(n?: number) {
   if (n === undefined || n === null) return '—';
-  return (Number(n) / 100).toFixed(2);
+  return '₺' + (Number(n) / 100).toFixed(2);
 }
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
