@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { gamesApi, type Game } from '@/lib/api';
+import { gamesApi, categoryDefsApi, type Game, type CategoryDef } from '@/lib/api';
 import Badge from '@/components/ui/Badge';
 import { PageSpinner } from '@/components/ui/Spinner';
 import Modal from '@/components/ui/Modal';
@@ -25,10 +25,6 @@ function useDemoLaunch() {
   return { launch, launching };
 }
 
-const GAME_CATEGORIES = [
-  'new', 'top', 'popular', 'slots', 'live_casino',
-  'table_games', 'jackpot', 'virtual_sports', 'crash',
-];
 
 function GameDetailModal({
   game,
@@ -195,8 +191,9 @@ export default function GamesPage() {
   const [viewGame, setViewGame] = useState<Game | null>(null);
 
   // category modal
-  const [catGame, setCatGame] = useState<Game | null>(null);
-  const [catValue, setCatValue] = useState('slots');
+  const [catGame, setCatGame]   = useState<Game | null>(null);
+  const [catValue, setCatValue] = useState('');
+  const [categoryDefs, setCategoryDefs] = useState<CategoryDef[]>([]);
 
   const { launch, launching } = useDemoLaunch();
 
@@ -218,6 +215,14 @@ export default function GamesPage() {
   }, [page, search, activeFilter]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    categoryDefsApi.list().then(res => {
+      const defs = res?.data ?? [];
+      setCategoryDefs(defs);
+      if (defs.length > 0) setCatValue(defs[0].key);
+    });
+  }, []);
 
   const handleToggle = async (g: Game) => {
     if (g.isActive) {
@@ -433,7 +438,9 @@ export default function GamesPage() {
           <div className="space-y-3">
             <label className="label">Category</label>
             <select className="input" value={catValue} onChange={e => setCatValue(e.target.value)}>
-              {GAME_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              {categoryDefs.map(c => (
+                <option key={c.key} value={c.key}>{c.label}</option>
+              ))}
             </select>
             <div className="flex gap-3 pt-1">
               <button onClick={() => setCatGame(null)} className="btn-outline flex-1">Cancel</button>

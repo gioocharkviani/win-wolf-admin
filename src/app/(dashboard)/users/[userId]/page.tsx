@@ -91,7 +91,7 @@ export default function UserDetailPage({ params }: { params: { userId: string } 
   const handleAdjust = async () => {
     if (!adjAmount || !adjReason) return;
     setAdjSaving(true);
-    const res = await usersApi.adjustBalance(userId, parseFloat(adjAmount), adjType, adjReason);
+    const res = await usersApi.adjustBalance(userId, Math.round(parseFloat(adjAmount) * 100), adjType, adjReason);
     setAdjSaving(false);
     setAdjMsg(res?.message ?? (res?.code === 200 ? 'Done' : 'Error'));
     setAdjAmount(''); setAdjReason('');
