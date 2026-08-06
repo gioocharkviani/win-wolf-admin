@@ -686,11 +686,62 @@ export interface UserAnalyticsData {
   };
 }
 
+export interface GameReportItem {
+  gameId: string;
+  gameName: string;
+  thumbnail: string | null;
+  provider: string | null;
+  wagered: number;
+  won: number;
+  ggr: number;
+  rtp: number;
+  uniquePlayers: number;
+  txCount: number;
+}
+
+export interface ProviderReportItem {
+  provider: string;
+  wagered: number;
+  won: number;
+  ggr: number;
+  rtp: number;
+  gameCount: number;
+}
+
+export interface GameReportData {
+  perGame: GameReportItem[];
+  perProvider: ProviderReportItem[];
+}
+
 export const analyticsApi = {
   get: () =>
     get<{ statusCode: number; data: PlatformAnalyticsData }>(`${BASE}/admin/analytics`),
   getUser: (userId: string) =>
     get<{ code: number; data: UserAnalyticsData }>(`${BASE}/admin/analytics/users/${userId}`),
+};
+
+export const withdrawalsApi = {
+  list: (p?: { page?: number; limit?: number; status?: string }) => {
+    const q = new URLSearchParams();
+    q.set('type', 'withdrawal');
+    if (p?.page)   q.set('page',   String(p.page));
+    if (p?.limit)  q.set('limit',  String(p.limit));
+    if (p?.status) q.set('status', p.status);
+    return get<TxPage>(`${BASE}/admin/transactions?${q}`);
+  },
+  approve: (id: string) =>
+    put<ApiRes>(`${BASE}/admin/withdrawals/${id}/approve`),
+  reject: (id: string, reason: string) =>
+    put<ApiRes>(`${BASE}/admin/withdrawals/${id}/reject`, { reason }),
+};
+
+export const reportsApi = {
+  games: (dateFrom?: string, dateTo?: string) => {
+    const q = new URLSearchParams();
+    if (dateFrom) q.set('dateFrom', dateFrom);
+    if (dateTo)   q.set('dateTo',   dateTo);
+    return get<{ code: number; data: GameReportData }>(`${BASE}/admin/reports/games?${q}`);
+  },
 };
 
 export const levelsApi = {
