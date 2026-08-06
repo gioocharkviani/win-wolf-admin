@@ -720,6 +720,28 @@ export const analyticsApi = {
     get<{ code: number; data: UserAnalyticsData }>(`${BASE}/admin/analytics/users/${userId}`),
 };
 
+export interface LiveSession {
+  id: number;
+  playerId: string;
+  gameId: string;
+  createdAt: string;
+  updatedAt: string;
+  gameName: string;
+  thumbnail: string | null;
+  provider: string | null;
+  userName: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  email: string | null;
+}
+
+export const liveApi = {
+  sessions: () =>
+    get<{ code: number; data: { sessions: LiveSession[]; total: number } }>(`${BASE}/admin/live/sessions`),
+  forceClose: (id: number) =>
+    put<ApiRes>(`${BASE}/admin/live/sessions/${id}/close`),
+};
+
 export const withdrawalsApi = {
   list: (p?: { page?: number; limit?: number; status?: string }) => {
     const q = new URLSearchParams();

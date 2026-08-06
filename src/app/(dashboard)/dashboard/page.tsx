@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usersApi, platformApi, type User, type PlatformStats } from '@/lib/api';
+import { usersApi, platformApi, liveApi, type User, type PlatformStats } from '@/lib/api';
 import StatCard from '@/components/ui/StatCard';
 import Badge, { statusBadge, txTypeBadge, txStatusBadge } from '@/components/ui/Badge';
 import { PageSpinner } from '@/components/ui/Spinner';
@@ -11,6 +11,7 @@ export default function DashboardPage() {
   const [users, setUsers]           = useState<User[]>([]);
   const [stats, setStats]           = useState<PlatformStats | null>(null);
   const [recentTxs, setRecentTxs]   = useState<any[]>([]);
+  const [liveCount, setLiveCount]   = useState(0);
   const [loading, setLoading]       = useState(true);
 
   useEffect(() => {
@@ -18,10 +19,12 @@ export default function DashboardPage() {
       usersApi.list(),
       platformApi.stats(),
       platformApi.allTransactions({ limit: 8, page: 1 }),
-    ]).then(([uRes, sRes, txRes]) => {
+      liveApi.sessions().catch(() => null),
+    ]).then(([uRes, sRes, txRes, liveRes]) => {
       setUsers(uRes?.data ?? []);
       setStats(sRes?.data ?? null);
       setRecentTxs(txRes?.data ?? []);
+      setLiveCount(liveRes?.data?.total ?? 0);
       setLoading(false);
     });
   }, []);
@@ -72,6 +75,23 @@ export default function DashboardPage() {
           icon={<svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>}
         />
       </div>
+
+      {/* ── Live counter ── */}
+      <Link href="/live" className="block">
+        <div className="card hover:border-emerald-500/40 transition-colors cursor-pointer border-emerald-500/20 bg-emerald-500/5">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
+              </span>
+              <span className="text-xs text-emerald-400 font-medium uppercase tracking-wider">Live Now</span>
+            </div>
+            <div className="ml-auto text-3xl font-bold text-emerald-400">{liveCount}</div>
+          </div>
+          <div className="text-xs text-gray-500 mt-1">players currently in games → View Live</div>
+        </div>
+      </Link>
 
       {/* ── Second row ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

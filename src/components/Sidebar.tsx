@@ -59,6 +59,16 @@ const NAV = [
     ),
   },
   {
+    href: '/live',
+    label: 'Live Players',
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          d="M5.636 18.364a9 9 0 010-12.728m12.728 0a9 9 0 010 12.728M9 10a1 1 0 011-1h4a1 1 0 110 2h-4a1 1 0 01-1-1zm3 4a1 1 0 100-2 1 1 0 000 2z" />
+      </svg>
+    ),
+  },
+  {
     href: '/withdrawals',
     label: 'Withdrawals',
     icon: (
