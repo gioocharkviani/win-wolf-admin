@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { gamesApi, categoryDefsApi, type Game, type CategoryDef } from '@/lib/api';
+import { gamesApi, categoryDefsApi, platformApi, type Game, type CategoryDef, type Provider } from '@/lib/api';
 import Badge from '@/components/ui/Badge';
 import { PageSpinner } from '@/components/ui/Spinner';
 import Modal from '@/components/ui/Modal';
@@ -184,6 +184,8 @@ export default function GamesPage() {
   const [search, setSearch]       = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [providerFilter, setProviderFilter] = useState('');
+  const [providers, setProviders] = useState<Provider[]>([]);
   const [syncing, setSyncing]     = useState(false);
   const [syncMsg, setSyncMsg]     = useState('');
 
@@ -205,6 +207,7 @@ export default function GamesPage() {
       page,
       limit,
       search: search || undefined,
+      provider: providerFilter || undefined,
       isActive: activeFilter === 'all' ? undefined : activeFilter === 'active',
     }).then(res => {
       setGames(res?.data ?? []);
@@ -212,7 +215,7 @@ export default function GamesPage() {
       setTotalPages(res?.totalPages ?? Math.ceil((res?.total ?? 0) / limit));
       setLoading(false);
     });
-  }, [page, search, activeFilter]);
+  }, [page, search, providerFilter, activeFilter]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -222,6 +225,10 @@ export default function GamesPage() {
       setCategoryDefs(defs);
       if (defs.length > 0) setCatValue(defs[0].key);
     });
+  }, []);
+
+  useEffect(() => {
+    platformApi.providers().then(res => setProviders(res?.data ?? [])).catch(() => {});
   }, []);
 
   const handleToggle = async (g: Game) => {
@@ -320,6 +327,22 @@ export default function GamesPage() {
             {f}
           </button>
         ))}
+
+        <select
+          className="input"
+          value={providerFilter}
+          onChange={e => { setPage(1); setProviderFilter(e.target.value); }}
+        >
+          <option value="">All providers</option>
+          {providers.map(p => (
+            <option key={p.id} value={p.name}>{p.name}</option>
+          ))}
+        </select>
+        {providerFilter && (
+          <button className="btn-outline" onClick={() => { setPage(1); setProviderFilter(''); }}>
+            Clear provider
+          </button>
+        )}
       </div>
 
       {/* Table */}
