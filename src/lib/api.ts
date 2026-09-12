@@ -191,6 +191,8 @@ export const gamesApi = {
     get<{ url: string }>(`${BASE}/admin/games/demo-url?gameId=${encodeURIComponent(gameHumanReadableId)}`),
   syncRevolver: () =>
     post<ApiRes>(`${BASE}/game/revolver-refresh`, {}),
+  syncNuxgame: () =>
+    post<ApiRes>(`${BASE}/game/nuxgame-refresh`, {}),
 };
 
 // â”€â”€â”€ promotions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -246,7 +248,21 @@ export const platformApi = {
     if (p?.type) q.set("type", p.type);
     if (p?.status) q.set("status", p.status);
     if (p?.userId) q.set("userId", p.userId);
+    if (p?.provider) q.set("provider", p.provider);
+    if (p?.gameId) q.set("gameId", p.gameId);
+    if (p?.dateFrom) q.set("dateFrom", p.dateFrom);
+    if (p?.dateTo) q.set("dateTo", p.dateTo);
+    if (p?.minAmount !== undefined) q.set("minAmount", String(p.minAmount));
+    if (p?.maxAmount !== undefined) q.set("maxAmount", String(p.maxAmount));
+    if (p?.sortBy) q.set("sortBy", p.sortBy);
+    if (p?.sortDir) q.set("sortDir", p.sortDir);
     return get<TxPage>(`${BASE}/admin/transactions?${q}`);
+  },
+  userTopSpend: (userId: string, dateFrom?: string, dateTo?: string) => {
+    const q = new URLSearchParams();
+    if (dateFrom) q.set("dateFrom", dateFrom);
+    if (dateTo) q.set("dateTo", dateTo);
+    return get<ApiRes<TopSpend>>(`${BASE}/admin/users/${userId}/top-spend?${q}`);
   },
   providers: () => get<ApiRes<Provider[]>>(`${BASE}/admin/games/providers`),
   categoryOverview: () =>
@@ -505,6 +521,27 @@ export interface TxFilters {
   type?: string;
   status?: string;
   userId?: string;
+  provider?: string;
+  gameId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  minAmount?: number;
+  maxAmount?: number;
+  sortBy?: "createdAt" | "amount";
+  sortDir?: "ASC" | "DESC";
+}
+
+export interface TopSpendEntry {
+  gameId?: string;
+  gameName?: string;
+  providerName?: string;
+  totalSpent: number;
+  betCount: number;
+}
+
+export interface TopSpend {
+  byGame: TopSpendEntry[];
+  byProvider: TopSpendEntry[];
 }
 
 export interface WageringStats {

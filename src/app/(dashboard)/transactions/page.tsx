@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { platformApi, type Transaction } from '@/lib/api';
+import { platformApi, type Transaction, type Provider } from '@/lib/api';
 import Badge, { txTypeBadge, txStatusBadge } from '@/components/ui/Badge';
 import { PageSpinner } from '@/components/ui/Spinner';
 import Modal from '@/components/ui/Modal';
@@ -78,26 +78,53 @@ export default function TransactionsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [userFilter, setUserFilter]     = useState('');
   const [userInput, setUserInput]       = useState('');
+  const [providerFilter, setProviderFilter] = useState('');
+  const [providers, setProviders]       = useState<Provider[]>([]);
+  const [dateFrom, setDateFrom]         = useState('');
+  const [dateTo, setDateTo]             = useState('');
+  const [minAmount, setMinAmount]       = useState('');
+  const [maxAmount, setMaxAmount]       = useState('');
+  const [sortBy, setSortBy]             = useState<'createdAt' | 'amount'>('createdAt');
+  const [sortDir, setSortDir]           = useState<'ASC' | 'DESC'>('DESC');
+
+  useEffect(() => {
+    platformApi.providers().then(res => setProviders(res?.data ?? [])).catch(() => {});
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
     const res = await platformApi.allTransactions({
       page,
       limit: LIMIT,
-      type:   typeFilter   || undefined,
-      status: statusFilter || undefined,
-      userId: userFilter   || undefined,
+      type:     typeFilter     || undefined,
+      status:   statusFilter   || undefined,
+      userId:   userFilter     || undefined,
+      provider: providerFilter || undefined,
+      dateFrom: dateFrom || undefined,
+      dateTo:   dateTo   || undefined,
+      minAmount: minAmount ? Math.round(parseFloat(minAmount) * 100) : undefined,
+      maxAmount: maxAmount ? Math.round(parseFloat(maxAmount) * 100) : undefined,
+      sortBy,
+      sortDir,
     });
     setTxs(res?.data ?? []);
     setTotal(res?.total ?? 0);
     setTotalPages(res?.totalPages ?? 1);
     setLoading(false);
-  }, [page, typeFilter, statusFilter, userFilter]);
+  }, [page, typeFilter, statusFilter, userFilter, providerFilter, dateFrom, dateTo, minAmount, maxAmount, sortBy, sortDir]);
 
   useEffect(() => { load(); }, [load]);
 
   const applyUserFilter = () => { setPage(1); setUserFilter(userInput.trim()); };
-  const clearFilters    = () => { setPage(1); setTypeFilter(''); setStatusFilter(''); setUserFilter(''); setUserInput(''); };
+  const clearFilters    = () => {
+    setPage(1);
+    setTypeFilter(''); setStatusFilter(''); setUserFilter(''); setUserInput('');
+    setProviderFilter(''); setDateFrom(''); setDateTo(''); setMinAmount(''); setMaxAmount('');
+    setSortBy('createdAt'); setSortDir('DESC');
+  };
+  const hasActiveFilters = typeFilter || statusFilter || userFilter || providerFilter || dateFrom || dateTo || minAmount || maxAmount;
+
+  const sortByAmountDesc = () => { setPage(1); setSortBy('amount'); setSortDir('DESC'); };
 
   return (
     <div className="p-8 space-y-6">
@@ -121,11 +148,57 @@ export default function TransactionsPage() {
               onKeyDown={e => e.key === 'Enter' && applyUserFilter()}
             />
             <button onClick={applyUserFilter} className="btn-primary flex-shrink-0">Filter</button>
-            {(typeFilter || statusFilter || userFilter) && (
+            {hasActiveFilters && (
               <button onClick={clearFilters} className="btn-outline flex-shrink-0">Clear</button>
             )}
           </div>
+          <select
+            className="input"
+            value={providerFilter}
+            onChange={e => { setPage(1); setProviderFilter(e.target.value); }}
+          >
+            <option value="">All providers</option>
+            {providers.map(p => (
+              <option key={p.id} value={p.name}>{p.name}</option>
+            ))}
+          </select>
         </div>
+
+        <div className="flex flex-wrap gap-3 items-end">
+          <div className="flex flex-col gap-1">
+            <span className="text-xs text-gray-500">From</span>
+            <input type="date" className="input" value={dateFrom}
+              onChange={e => { setPage(1); setDateFrom(e.target.value); }} />
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-xs text-gray-500">To</span>
+            <input type="date" className="input" value={dateTo}
+              onChange={e => { setPage(1); setDateTo(e.target.value); }} />
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-xs text-gray-500">Min amount</span>
+            <input type="number" className="input w-28" placeholder="0.00" value={minAmount}
+              onChange={e => { setPage(1); setMinAmount(e.target.value); }} />
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-xs text-gray-500">Max amount</span>
+            <input type="number" className="input w-28" placeholder="0.00" value={maxAmount}
+              onChange={e => { setPage(1); setMaxAmount(e.target.value); }} />
+          </div>
+          <button
+            onClick={sortByAmountDesc}
+            className={`btn text-xs ${sortBy === 'amount' && sortDir === 'DESC' ? 'btn-primary' : 'btn-outline'}`}
+            title="Sort so the highest-amount transactions (where players pay the most) show first"
+          >
+            Sort: Highest amount first
+          </button>
+          {sortBy === 'amount' && (
+            <button onClick={() => { setSortBy('createdAt'); setSortDir('DESC'); }} className="btn-outline text-xs">
+              Reset sort
+            </button>
+          )}
+        </div>
+
         <div className="flex flex-wrap gap-2">
           <span className="text-xs text-gray-500 self-center mr-1">Type:</span>
           {TX_TYPES.map(t => (

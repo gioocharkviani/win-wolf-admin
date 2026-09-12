@@ -506,7 +506,7 @@ export default function PromotionsPage() {
                   {!form.userChoosesGame ? (
                     /* ── Admin-chosen: pick specific games via modal ── */
                     <div className="space-y-2 pt-1">
-                      <p className="text-xs text-gray-400">Revolver API fires immediately on assign</p>
+                      <p className="text-xs text-gray-400">Provider API fires immediately on assign</p>
                       <div className="flex items-center gap-3">
                         <button type="button" onClick={() => { setGamePickerMode('freeSpins'); setGameSearch(''); }}
                           className="btn-outline text-xs">
@@ -535,7 +535,7 @@ export default function PromotionsPage() {
                     /* ── User-chosen: pick eligible categories ── */
                     <div className="space-y-2 pt-1">
                       <p className="text-xs text-gray-400">
-                        User picks any game from selected categories — Revolver API fires when user selects their game
+                        User picks any game from selected categories — Provider API fires when user selects their game
                       </p>
                       <p className="text-xs font-medium text-gray-300">Eligible categories (leave empty = all slots):</p>
                       <div className="flex flex-wrap gap-2">
@@ -667,7 +667,7 @@ export default function PromotionsPage() {
           <div className="space-y-3">
             <p className="text-xs text-gray-400">
               {gamePickerMode === 'freeSpins'
-                ? 'Select which games free spins will be applied to (Revolver API fires on assign).'
+                ? 'Select which games free spins will be applied to (provider API fires on assign).'
                 : 'Wagering from this bonus will only count on the selected games.'}
             </p>
             <input
@@ -749,14 +749,14 @@ export default function PromotionsPage() {
               return (p as any).userChoosesGame ? (
                 <div className="bg-emerald-900/20 border border-emerald-700/50 rounded-lg px-3 py-2 text-xs text-emerald-300 space-y-1">
                   <p className="font-semibold">User-choice free spins</p>
-                  <p>The user will be prompted to pick a game. Revolver Gaming GAP will only be called when the user makes their selection.</p>
+                  <p>The user will be prompted to pick a game. The game's provider API will only be called when the user makes their selection.</p>
                   {((p as any).eligibleCategories?.length ?? 0) > 0 && (
                     <p>Eligible categories: <span className="font-medium">{(p as any).eligibleCategories.join(', ')}</span></p>
                   )}
                 </div>
               ) : (
                 <div className="bg-amber-900/20 border border-amber-700/50 rounded-lg px-3 py-2 text-xs text-amber-300">
-                  Admin-chosen free spins — Revolver Gaming GAP will be called immediately for {(p?.freeSpinsGameIds ?? []).length} selected game(s).
+                  Admin-chosen free spins — The game's provider API will be called immediately for {(p?.freeSpinsGameIds ?? []).length} selected game(s).
                 </div>
               );
             })()}

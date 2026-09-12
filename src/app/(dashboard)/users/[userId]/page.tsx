@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usersApi, wageringApi, analyticsApi, type User, type Transaction, type UserBonus, type WageringEntry, type UserAnalyticsData } from '@/lib/api';
+import { usersApi, wageringApi, analyticsApi, platformApi, type User, type Transaction, type UserBonus, type WageringEntry, type UserAnalyticsData, type TopSpend } from '@/lib/api';
 import Badge, { statusBadge, txTypeBadge, txStatusBadge } from '@/components/ui/Badge';
 import { PageSpinner } from '@/components/ui/Spinner';
 
@@ -19,6 +19,7 @@ export default function UserDetailPage({ params }: { params: { userId: string } 
   const [bonuses, setBonuses]         = useState<UserBonus[]>([]);
   const [wagering, setWagering]       = useState<WageringEntry[]>([]);
   const [userAnalytics, setAnalytics] = useState<UserAnalyticsData | null>(null);
+  const [topSpend, setTopSpend]       = useState<TopSpend | null>(null);
   const [loading, setLoading]         = useState(true);
 
   // transaction pagination
@@ -50,12 +51,13 @@ export default function UserDetailPage({ params }: { params: { userId: string } 
 
   const load = async () => {
     setLoading(true);
-    const [uRes, tRes, bRes, wRes, aRes] = await Promise.all([
+    const [uRes, tRes, bRes, wRes, aRes, tsRes] = await Promise.all([
       usersApi.getById(userId),
       usersApi.transactions(userId),
       usersApi.bonuses(userId),
       wageringApi.getForUser(userId),
       analyticsApi.getUser(userId),
+      platformApi.userTopSpend(userId),
     ]);
     const u = uRes?.data ?? null;
     setUser(u);
@@ -63,6 +65,7 @@ export default function UserDetailPage({ params }: { params: { userId: string } 
     setBonuses(bRes?.data ?? []);
     setWagering(wRes?.data ?? []);
     setAnalytics(aRes?.data ?? null);
+    setTopSpend(tsRes?.data ?? null);
     setPidValue(u?.personalId ?? '');
     if (u) {
       setEditForm({
@@ -488,6 +491,48 @@ export default function UserDetailPage({ params }: { params: { userId: string } 
               })()}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Top spend — where this player pays the most */}
+      {topSpend && (topSpend.byGame.length > 0 || topSpend.byProvider.length > 0) && (
+        <div className="card p-0 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-800">
+            <h2 className="text-base font-semibold text-white">Top Spend</h2>
+            <p className="text-xs text-gray-500">Where this player bets the most, ranked by total wagered</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:divide-x divide-gray-800">
+            <div className="p-4">
+              <h3 className="text-xs font-medium text-gray-400 uppercase mb-2">By Provider</h3>
+              <div className="space-y-1">
+                {topSpend.byProvider.length === 0 ? (
+                  <p className="text-xs text-gray-500">No bets yet</p>
+                ) : topSpend.byProvider.map((r, i) => (
+                  <div key={r.providerName ?? i} className="flex items-center justify-between text-sm py-1">
+                    <span className="text-gray-300">{r.providerName ?? 'Unknown'}</span>
+                    <span className="font-mono text-white">
+                      {(r.totalSpent / 100).toFixed(2)} <span className="text-gray-500 text-xs">({r.betCount} bets)</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="p-4">
+              <h3 className="text-xs font-medium text-gray-400 uppercase mb-2">By Game</h3>
+              <div className="space-y-1">
+                {topSpend.byGame.length === 0 ? (
+                  <p className="text-xs text-gray-500">No bets yet</p>
+                ) : topSpend.byGame.slice(0, 10).map((r, i) => (
+                  <div key={r.gameId ?? i} className="flex items-center justify-between text-sm py-1">
+                    <span className="text-gray-300 truncate max-w-[60%]">{r.gameName ?? r.gameId ?? 'Unknown'}</span>
+                    <span className="font-mono text-white">
+                      {(r.totalSpent / 100).toFixed(2)} <span className="text-gray-500 text-xs">({r.betCount})</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

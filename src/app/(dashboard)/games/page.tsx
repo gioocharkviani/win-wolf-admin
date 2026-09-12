@@ -245,11 +245,11 @@ export default function GamesPage() {
     load();
   };
 
-  const handleSync = async () => {
+  const handleSync = async (provider: 'revolver' | 'nuxgame') => {
     setSyncing(true);
     setSyncMsg('');
     try {
-      const res = await gamesApi.syncRevolver();
+      const res = provider === 'revolver' ? await gamesApi.syncRevolver() : await gamesApi.syncNuxgame();
       setSyncMsg((res as any)?.message ?? 'Sync completed');
       load();
     } catch {
@@ -269,7 +269,7 @@ export default function GamesPage() {
         <div className="flex items-center gap-3">
           {syncMsg && <span className="text-sm text-emerald-400">{syncMsg}</span>}
           <button
-            onClick={handleSync}
+            onClick={() => handleSync('revolver')}
             disabled={syncing}
             className="btn-outline gap-2"
           >
@@ -277,6 +277,16 @@ export default function GamesPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
             {syncing ? 'Syncing…' : 'Sync from Revolver'}
+          </button>
+          <button
+            onClick={() => handleSync('nuxgame')}
+            disabled={syncing}
+            className="btn-outline gap-2"
+          >
+            <svg className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {syncing ? 'Syncing…' : 'Sync from NuxGame'}
           </button>
         </div>
       </div>
