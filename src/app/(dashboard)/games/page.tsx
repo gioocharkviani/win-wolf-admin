@@ -9,13 +9,21 @@ import Modal from '@/components/ui/Modal';
 function useDemoLaunch() {
   const [launching, setLaunching] = useState<string | null>(null);
 
-  const launch = async (gameHumanReadableId: string | undefined) => {
-    if (!gameHumanReadableId) return;
-    setLaunching(gameHumanReadableId);
+  // Must be the game's gameUUID — that's what the backend looks games up
+  // by (game.service.ts getDemoUrl / lunchGame). Passing gameHumanReadableId
+  // here silently fails for any provider where it differs from gameUUID
+  // (e.g. NuxGame, where gameUUID is "nuxg-<id>" but gameHumanReadableId is
+  // just "<id>") — the lookup misses, dispatch falls through, and the
+  // backend returns { url: null } with no visible error.
+  const launch = async (gameUUID: string | undefined) => {
+    if (!gameUUID) return;
+    setLaunching(gameUUID);
     try {
-      const res = await gamesApi.demoUrl(gameHumanReadableId);
+      const res = await gamesApi.demoUrl(gameUUID);
       if (res?.url) {
         window.open(res.url, '_blank', 'noopener');
+      } else {
+        alert('Demo URL unavailable for this game — check that it was synced correctly and its provider is supported.');
       }
     } finally {
       setLaunching(null);
@@ -72,17 +80,17 @@ function GameDetailModal({
         </div>
 
         {/* Demo launch */}
-        {game.gameHumanReadableId && (
+        {game.gameUUID && (
           <button
-            onClick={() => onLaunchDemo(game.gameHumanReadableId!)}
-            disabled={launching === game.gameHumanReadableId}
+            onClick={() => onLaunchDemo(game.gameUUID)}
+            disabled={launching === game.gameUUID}
             className="btn-primary w-full justify-center gap-2"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            {launching === game.gameHumanReadableId ? 'Opening…' : 'Launch Demo (New Tab)'}
+            {launching === game.gameUUID ? 'Opening…' : 'Launch Demo (New Tab)'}
           </button>
         )}
 
