@@ -195,6 +195,20 @@ export const gamesApi = {
     post<ApiRes>(`${BASE}/game/nuxgame-refresh`, {}),
 };
 
+export const providersApi = {
+  show: (id: number) => put<ApiRes>(`${BASE}/admin/providers/${id}/show`),
+  hide: (id: number) => put<ApiRes>(`${BASE}/admin/providers/${id}/hide`),
+  delete: (id: number) =>
+    del<
+      ApiRes<{
+        providerId: number;
+        providerDeleted: boolean;
+        deletedGameIds: number[];
+        hiddenGameIds: number[];
+      }>
+    >(`${BASE}/admin/providers/${id}`),
+};
+
 // â”€â”€â”€ promotions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const promotionsApi = {
@@ -508,6 +522,7 @@ export interface Provider {
   name: string;
   prefix: string;
   logo?: string;
+  isActive?: boolean;
 }
 
 export interface PlatformStats {

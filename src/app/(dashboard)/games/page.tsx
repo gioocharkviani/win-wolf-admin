@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { gamesApi, categoryDefsApi, platformApi, type Game, type CategoryDef, type Provider } from '@/lib/api';
+import { gamesApi, categoryDefsApi, platformApi, providersApi, type Game, type CategoryDef, type Provider } from '@/lib/api';
 import Badge from '@/components/ui/Badge';
 import { PageSpinner } from '@/components/ui/Spinner';
 import Modal from '@/components/ui/Modal';
@@ -194,6 +194,9 @@ export default function GamesPage() {
   const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [providerFilter, setProviderFilter] = useState('');
   const [providers, setProviders] = useState<Provider[]>([]);
+  const [providerBusy, setProviderBusy] = useState<number | null>(null);
+  const [deleteProvider, setDeleteProvider] = useState<Provider | null>(null);
+  const [deleteResultMsg, setDeleteResultMsg] = useState('');
   const [syncing, setSyncing]     = useState(false);
   const [syncMsg, setSyncMsg]     = useState('');
 
@@ -235,9 +238,11 @@ export default function GamesPage() {
     });
   }, []);
 
-  useEffect(() => {
+  const loadProviders = useCallback(() => {
     platformApi.providers().then(res => setProviders(res?.data ?? [])).catch(() => {});
   }, []);
+
+  useEffect(() => { loadProviders(); }, [loadProviders]);
 
   const handleToggle = async (g: Game) => {
     if (g.isActive) {
@@ -246,6 +251,35 @@ export default function GamesPage() {
       await gamesApi.show(g.id);
     }
     load();
+  };
+
+  const handleToggleProvider = async (p: Provider) => {
+    setProviderBusy(p.id);
+    try {
+      if (p.isActive) {
+        await providersApi.hide(p.id);
+      } else {
+        await providersApi.show(p.id);
+      }
+      loadProviders();
+      load();
+    } finally {
+      setProviderBusy(null);
+    }
+  };
+
+  const handleDeleteProvider = async () => {
+    if (!deleteProvider) return;
+    setProviderBusy(deleteProvider.id);
+    try {
+      const res = await providersApi.delete(deleteProvider.id);
+      setDeleteResultMsg((res as any)?.message ?? 'Provider deleted');
+      loadProviders();
+      load();
+    } finally {
+      setProviderBusy(null);
+      setDeleteProvider(null);
+    }
   };
 
   const handleAddCategory = async () => {
@@ -305,6 +339,72 @@ export default function GamesPage() {
           </button>
         </div>
       </div>
+
+      {/* Providers */}
+      <div className="card p-0 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-800">
+          <h2 className="text-base font-semibold text-white">Providers</h2>
+          <p className="text-xs text-gray-500">Show/hide a provider to control whether its games appear to players, or delete it entirely.</p>
+        </div>
+        <div className="divide-y divide-gray-800">
+          {providers.length === 0 ? (
+            <p className="px-6 py-6 text-sm text-gray-500">No providers synced yet.</p>
+          ) : providers.map(p => (
+            <div key={p.id} className="flex items-center justify-between gap-3 px-6 py-3">
+              <div className="flex items-center gap-3 min-w-0">
+                {p.logo && <img src={p.logo} alt={p.name} className="h-6 object-contain flex-shrink-0" onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />}
+                <span className="text-sm text-white font-medium truncate">{p.name}</span>
+                <span className="text-xs text-gray-500 font-mono">{p.prefix}</span>
+                <Badge label={p.isActive ? 'Visible' : 'Hidden'} variant={p.isActive ? 'success' : 'gray'} />
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={() => handleToggleProvider(p)}
+                  disabled={providerBusy === p.id}
+                  className="btn-outline text-xs disabled:opacity-40"
+                >
+                  {p.isActive ? 'Hide' : 'Show'}
+                </button>
+                <button
+                  onClick={() => setDeleteProvider(p)}
+                  disabled={providerBusy === p.id}
+                  className="btn-outline text-xs text-red-400 border-red-900 hover:bg-red-950 disabled:opacity-40"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {deleteProvider && (
+        <Modal title={`Delete "${deleteProvider.name}"?`} onClose={() => setDeleteProvider(null)}>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-300">
+              This deletes the provider and every one of its games. Games with existing transaction/betting
+              history can&apos;t be safely removed — those will be hidden instead of deleted, and if any are,
+              the provider itself will only be hidden (not removed) so nothing silently disappears.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button className="btn-outline" onClick={() => setDeleteProvider(null)}>Cancel</button>
+              <button
+                className="btn-primary bg-red-600 hover:bg-red-500 border-red-600"
+                onClick={handleDeleteProvider}
+                disabled={providerBusy === deleteProvider.id}
+              >
+                {providerBusy === deleteProvider.id ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+      {deleteResultMsg && (
+        <div className="card text-sm text-amber-300">
+          {deleteResultMsg}
+          <button className="ml-3 text-gray-500 hover:text-gray-300" onClick={() => setDeleteResultMsg('')}>Dismiss</button>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
